@@ -1,12 +1,15 @@
-FROM schoolofdevops/maven:spring
+FROM maven as build 
 
 WORKDIR /app
 
 COPY . .
 
-RUN mvn package  && \
-    mv target/spring-petclinic-2.3.1.BUILD-SNAPSHOT.jar /run/petclinic.jar
+RUN mvn package 
+
+FROM java:8-jre-alpine as package  
+
+COPY --from=build /code/target/spring-petclinic-*.jar /app
 
 EXPOSE 8080
 
-CMD java -jar /run/petclinic.jar
+CMD java -jar /app
