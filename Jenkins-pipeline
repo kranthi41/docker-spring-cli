@@ -1,0 +1,26 @@
+node{
+    def buildNumber = BUILD_NUMBER
+    stage("git clone"){
+        
+        git url:'https://github.com/kranthi41/docker-spring-cli.git',branch: 'master'
+    }
+    stage("Build docker image"){
+        sh "docker build -t krbh0717/docker-spring-cli:${buildNumber} ."
+    }
+    
+    stage("Docker login and push image"){
+        withCredentials([string(credentialsId: 'Dokcerhubpwd', variable: 'Dokcerhubpwd')]) {
+        sh "docker login -u krbh0717 -p ${Dokcerhubpwd} https://index.docker.io/v1/"
+		
+    }
+       
+        sh "docker push krbh0717/docker-spring-cli:${buildNumber}"
+    }
+	stage('Run container on remote-server'){
+	  sshagent(['jenkins-user-remote']) {
+          sh "ssh -o StrictHostKeyChecking=no  jenkins-user@192.168.56.104 docker rm -f javawebappcontainer || true"
+          sh "ssh -o StrictHostKeyChecking=no  jenkins-user@192.168.56.104 docker run -itd -p 8080:8080 --name javawebappcontainer krbh0717/docker-spring-cli:${buildNumber} "
+          
+      }
+    }
+}
